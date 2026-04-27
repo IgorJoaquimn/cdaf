@@ -39,7 +39,12 @@ def process_video(video_config, info_list):
     # 1. Título
     if not any(i.get('video_id') == video_id for i in info_list):
         print(f"Obtendo título...")
-        res = subprocess.run(['yt-dlp', '--get-title', video_url], capture_output=True, text=True)
+        cmd_title = ['yt-dlp', '--get-title']
+        if os.path.exists('cookies.txt'):
+            cmd_title.extend(['--cookies', 'cookies.txt'])
+        cmd_title.append(video_url)
+        
+        res = subprocess.run(cmd_title, capture_output=True, text=True)
         title = res.stdout.strip() or "Título não encontrado"
         info_list.append({"video_id": video_id, "title": title})
     else:
@@ -49,7 +54,12 @@ def process_video(video_config, info_list):
     # 2. Download se necessário
     if not os.path.exists(raw_file):
         print(f"Baixando chat...")
-        subprocess.run(['yt-dlp', '--skip-download', '--write-subs', '--sub-langs', 'live_chat', '--output', os.path.join(raw_dir, f"chat_{video_id}"), video_url])
+        cmd_dl = ['yt-dlp', '--skip-download', '--write-subs', '--sub-langs', 'live_chat', '--output', os.path.join(raw_dir, f"chat_{video_id}")]
+        if os.path.exists('cookies.txt'):
+            cmd_dl.extend(['--cookies', 'cookies.txt'])
+        cmd_dl.append(video_url)
+        
+        subprocess.run(cmd_dl)
 
     # 3. Parsing
     if os.path.exists(raw_file):
