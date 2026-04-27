@@ -12,112 +12,99 @@ def time_to_seconds(t_str):
     return 0
 
 def get_match_data(ts, start, fh_end, sh_start, sh_end):
-    if ts < start:
-        return "Pré-jogo", f"{int((ts-start)//60)}'"
+    if ts < start: return "Pré-jogo", f"{int((ts-start)//60)}'"
     if ts <= fh_end:
         m = (ts - start) / 60
-        label = f"{int(m)}'" if m <= 45 else f"45+{int(m-45)}'"
-        return "1º Tempo", label
-    if ts < sh_start:
-        return "Intervalo", "Int"
+        return "1º Tempo", f"{int(m)}'" if m <= 45 else f"45+{int(m-45)}'"
+    if ts < sh_start: return "Intervalo", "Int"
     if ts <= sh_end:
-        m_sh = (ts - sh_start) / 60
-        m_total = m_sh + 45
-        label = f"{int(m_total)}'" if m_total <= 90 else f"90+{int(m_total-90)}'"
-        return "2º Tempo", label
+        m_total = ((ts - sh_start) / 60) + 45
+        return "2º Tempo", f"{int(m_total)}'" if m_total <= 90 else f"90+{int(m_total-90)}'"
     return "Pós-jogo", "Pós"
 
-def main():
-    # 1. Carregar Configurações
-    config_path = 'config/settings.json'
-    with open(config_path, 'r') as f:
-        config = json.load(f)
-
-    video_id = config.get('video_id')
-    v_start = time_to_seconds(config.get('game_start_time'))
-    fh_end = time_to_seconds(config.get('first_half_end'))
-    sh_start = time_to_seconds(config.get('second_half_start'))
-    sh_end = time_to_seconds(config.get('second_half_end'))
+def process_video(video_config, info_list):
+    video_id = video_config['video_id']
+    v_start = time_to_seconds(video_config['game_start_time'])
+    fh_end = time_to_seconds(video_config['first_half_end'])
+    sh_start = time_to_seconds(video_config['second_half_start'])
+    sh_end = time_to_seconds(video_config['second_half_end'])
     
     video_url = f"https://www.youtube.com/watch?v={video_id}"
     raw_dir = 'data/raw'
     os.makedirs(raw_dir, exist_ok=True)
-    output_template = os.path.join(raw_dir, 'chat_download')
-
-    print(f"--- Iniciando Pipeline ---")
+    raw_file = os.path.join(raw_dir, f"chat_{video_id}.live_chat.json")
     
-    # 2. Obter Título do Vídeo
-    print("\n[1/3] Obtendo título do vídeo...")
-    try:
-        title_result = subprocess.run(
-            ['yt-dlp', '--get-title', video_url],
-            capture_output=True, text=True, check=True
-        )
-        video_title = title_result.stdout.strip()
-        
-        # Salva o título em um arquivo JSON separado
-        video_info_path = 'config/video_info.json'
-        with open(video_info_path, 'w', encoding='utf-8') as f:
-            json.dump({"video_id": video_id, "title": video_title}, f, indent=4, ensure_ascii=False)
-        print(f"Título salvo: {video_title}")
-    except Exception as e:
-        print(f"Aviso: Não foi possível obter o título do vídeo: {e}")
+    print(f"\n>>> Processando: {video_id}")
 
-    # 3. Coletar dados com yt-dlp
-    json_files = glob.glob(f"{output_template}*.live_chat.json")
-    if not json_files:
-        print("\n[2/3] Coletando chat via yt-dlp...")
-        cmd = ['yt-dlp', '--skip-download', '--write-subs', '--sub-langs', 'live_chat', '--output', output_template, video_url]
-        try:
-            subprocess.run(cmd, check=True)
-            json_files = glob.glob(f"{output_template}*.live_chat.json")
-        except subprocess.CalledProcessError as e:
-            print(f"Erro ao executar yt-dlp: {e}")
-            return
+    # 1. Título
+    if not any(i.get('video_id') == video_id for i in info_list):
+        print(f"Obtendo título...")
+        res = subprocess.run(['yt-dlp', '--get-title', video_url], capture_output=True, text=True)
+        title = res.stdout.strip() or "Título não encontrado"
+        info_list.append({"video_id": video_id, "title": title})
     else:
-        print("\n[2/3] Arquivo bruto encontrado. Pulando download.")
+        title = next(i['title'] for i in info_list if i['video_id'] == video_id)
+        print(f"Título: {title}")
+
+    # 2. Download se necessário
+    if not os.path.exists(raw_file):
+        print(f"Baixando chat...")
+        subprocess.run(['yt-dlp', '--skip-download', '--write-subs', '--sub-langs', 'live_chat', '--output', os.path.join(raw_dir, f"chat_{video_id}"), video_url])
+
+    # 3. Parsing
+    if os.path.exists(raw_file):
+        print(f"Parsing mensagens...")
+        mensagens = []
+        with open(raw_file, 'r', encoding='utf-8') as f:
+            for line in f:
+                if not line.strip(): continue
+                try:
+                    data = json.loads(line)
+                    replay_action = data.get('replayChatItemAction', {})
+                    actions = replay_action.get('actions', [])
+                    if not actions: continue
+                    item = actions[0].get('addChatItemAction', {}).get('item', {})
+                    renderer = item.get('liveChatTextMessageRenderer') or item.get('liveChatPaidMessageRenderer')
+                    if renderer:
+                        msg = "".join([p.get('text', '') for p in renderer.get('message', {}).get('runs', [])])
+                        ts_video = int(replay_action.get('videoOffsetTimeMsec', '0')) / 1000
+                        periodo, label = get_match_data(ts_video, v_start, fh_end, sh_start, sh_end)
+                        if msg:
+                            mensagens.append({
+                                'timestamp_video_segundos': ts_video,
+                                'timestamp_jogo_segundos': ts_video - v_start,
+                                'label_partida': label, 'periodo': periodo,
+                                'autor': renderer.get('authorName', {}).get('simpleText', 'Desconhecido'),
+                                'mensagem': msg
+                            })
+                except Exception: continue
+        
+        df = pd.DataFrame(mensagens).sort_values(by='timestamp_video_segundos')
+        os.makedirs('data/processed', exist_ok=True)
+        df.to_csv(f"data/processed/chat_{video_id}_processed.csv", index=False)
+        print(f"Concluído: {len(df)} mensagens.")
+    else:
+        print(f"Erro: Arquivo bruto {raw_file} não encontrado.")
+
+def main():
+    with open('config/settings.json', 'r') as f:
+        videos = json.load(f)
     
-    raw_file = json_files[0]
+    info_path = 'config/video_info.json'
+    info_list = []
+    if os.path.exists(info_path):
+        with open(info_path, 'r') as f:
+            data = json.load(f)
+            if isinstance(data, list):
+                info_list = data
+            elif isinstance(data, dict):
+                info_list = [data]
 
-    # 4. Processar
-    print("\n[3/3] Processando mensagens...")
-    mensagens = []
+    for video in videos:
+        process_video(video, info_list)
 
-    with open(raw_file, 'r', encoding='utf-8') as f:
-        for line in f:
-            if not line.strip(): continue
-            try:
-                data = json.loads(line)
-                replay_action = data.get('replayChatItemAction', {})
-                actions = replay_action.get('actions', [])
-                if not actions: continue
-                
-                item = actions[0].get('addChatItemAction', {}).get('item', {})
-                renderer = item.get('liveChatTextMessageRenderer') or item.get('liveChatPaidMessageRenderer')
-                
-                if renderer:
-                    message_text = "".join([part.get('text', '') for part in renderer.get('message', {}).get('runs', [])])
-                    author = renderer.get('authorName', {}).get('simpleText', 'Desconhecido')
-                    ts_video = int(replay_action.get('videoOffsetTimeMsec', '0')) / 1000
-                    
-                    periodo, match_label = get_match_data(ts_video, v_start, fh_end, sh_start, sh_end)
-                    
-                    if message_text:
-                        mensagens.append({
-                            'timestamp_video_segundos': ts_video,
-                            'timestamp_jogo_segundos': ts_video - v_start,
-                            'label_partida': match_label,
-                            'periodo': periodo,
-                            'autor': author,
-                            'mensagem': message_text
-                        })
-            except Exception: continue
-
-    df_chat = pd.DataFrame(mensagens)
-    df_chat = df_chat.sort_values(by='timestamp_video_segundos')
-    output_path = os.path.join('data/processed', f"chat_{video_id}_processed.csv")
-    df_chat.to_csv(output_path, index=False, encoding='utf-8')
-    print(f"\nPipeline concluído com sucesso!")
+    with open(info_path, 'w', encoding='utf-8') as f:
+        json.dump(info_list, f, indent=4, ensure_ascii=False)
 
 if __name__ == "__main__":
     main()
