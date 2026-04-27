@@ -64,12 +64,17 @@ def process_video(video_config, info_list):
     # 2. Download
     if not os.path.exists(raw_file):
         print(f"Baixando chat...")
-        cmd_dl = ['yt-dlp', '--skip-download', '--write-subs', '--sub-langs', 'live_chat', '--output', os.path.join(raw_dir, f"chat_{video_id}")]
+        cmd_dl = ['yt-dlp', '--skip-download', '--write-subs', '--sub-langs', 'live_chat', '--output', os.path.join(raw_dir, f"chat_{video_id}.%(ext)s")]
         if os.path.exists('cookies.txt'): cmd_dl.extend(['--cookies', 'cookies.txt'])
         cmd_dl.append(video_url)
         subprocess.run(cmd_dl, capture_output=True)
 
     # 3. Parsing
+    output_path = f"data/processed/chat_{video_id}_processed.csv"
+    if os.path.exists(output_path):
+        print(f"CSV já existe para {video_id}. Pulando.")
+        return
+
     if os.path.exists(raw_file):
         print(f"Parsing mensagens...")
         mensagens = []
