@@ -1,51 +1,58 @@
-# CDAF - Análise de Chat Live (YouTube)
+# CDAF - Análise de Chat Live (YouTube - Bundesliga)
 
-Este projeto automatiza a coleta e análise de mensagens de chat ao vivo do YouTube, com foco em partidas de futebol. Ele extrai as mensagens, categoriza-as por períodos do jogo e gera visualizações de engajamento baseadas em picos e tendências.
+Este projeto automatiza o ciclo completo de coleta, sincronização e análise de mensagens de chat ao vivo do YouTube, especificamente para transmissões de futebol (CazéTV). 
+
+O diferencial técnico deste projeto é a **sincronização matemática** entre o tempo real do vídeo e o cronômetro oficial da partida (0-90'+) através de Computer Vision.
 
 ## 🚀 Funcionalidades
 
-- **Coleta Automatizada**: Utiliza `yt-dlp` para baixar o histórico de chat e metadados.
-- **Refinamento de Tempo (Vision)**: Script avançado que usa OCR e processamento de imagem para detectar o início exato da partida pelo placar da transmissão.
-- **Pipeline Unificado**: Processa dados brutos em um CSV estruturado com cronômetro oficial de TV (0-90'+).
-- **Análise Visual**: Notebook Jupyter com gráficos de volume bruto e tendências suavizadas (Média Móvel).
+- **Coleta de Chat Sincronizada**: Extração de centenas de milhares de mensagens com timestamps precisos.
+- **Refinamento via Vision (OCR)**: Algoritmo que "assiste" ao vídeo, localiza o placar e sincroniza o chat com o cronômetro de TV.
+- **Pipeline Multi-Vídeo**: Suporte para processamento em massa de playlists inteiras.
+- **Análise Exploratória (EDA)**: Dashboard estatístico com heatmaps de engajamento, detecção de picos de "hype" e comportamento de usuários.
 
 ## 📁 Estrutura do Projeto
 
 ```text
 ├── config/
-│   ├── settings.json      # Configuração principal (Vídeos e Timestamps)
-│   └── video_info.json    # Títulos dos vídeos extraídos
-├── data/
-│   ├── raw/               # JSONs brutos do YouTube
-│   ├── processed/         # CSVs processados com tempos oficiais
-│   └── verification/      # Frames e ROIs usados para validar o OCR
+│   ├── settings.json      # Configuração dos vídeos (IDs e metadados)
+│   └── video_info.json    # Títulos oficiais extraídos
 ├── src/
-│   ├── pipeline.py        # Coleta e processamento de chat
-│   └── refine_start_times.py # Refinamento automático do início via Vision
-├── analysis.ipynb         # Notebook para visualização de dados
-└── pyproject.toml         # Dependências (uv)
+│   ├── pipeline.py        # Coleta e processamento de mensagens
+│   └── refine_start_times.py # Refinamento via OCR (Vision)
+├── analysis.ipynb         # Notebook de análise estatística
+├── pyproject.toml         # Gerenciamento de dependências (uv)
+└── README.md              # Documentação
 ```
 
-## 🛠️ Instalação e Uso
+## 🛠️ Desafios e Soluções (Log de Desenvolvimento)
 
-1. **Configurar os vídeos**:
-   Edite `config/settings.json` com os IDs dos vídeos e estimativas iniciais.
+Durante o desenvolvimento, superamos os seguintes obstáculos técnicos:
 
-2. **Refinar o início (Opcional, mas recomendado)**:
-   ```bash
-   uv run src/refine_start_times.py
-   ```
-   *Usa OCR para ler o placar e ajustar o game_start_time automaticamente.*
+1.  **Mudanças na Estrutura do YouTube**: A biblioteca inicial `chat-downloader` falhou. Resolvemos migrando para o `yt-dlp` com extração de metadados JSON, o que se mostrou mais robusto.
+2.  **Rate Limiting (HTTP 429)**: Ao processar 69 vídeos em paralelo, o YouTube bloqueou o IP. Implementamos suporte a **Cookies de Sessão** e **Delays Aleatórios** para bypassar a detecção de bots.
+3.  **Scoreboards Complexos**: O OCR falhou inicialmente em layouts de "Multi-Live" (telas reduzidas). Criamos uma **Estratégia de Multi-ROI** com melhoria de contraste (CLAHE) e upscaling, atingindo 100% de precisão na detecção do tempo.
+4.  **Acréscimos e Intervalos**: Gols e picos de chat ocorrem frequentemente nos acréscimos (ex: 45+2'). Criamos uma lógica de **Broadcasting Time** que converte segundos lineares em labels oficiais de futebol.
 
-3. **Executar o Pipeline**:
-   ```bash
-   uv run src/pipeline.py
-   ```
+## 📊 Como Usar
 
-4. **Gerar a Análise**:
-   ```bash
-   uv run jupyter nbconvert --to html --execute analysis.ipynb
-   ```
+Este projeto utiliza o [uv](https://github.com/astral-sh/uv).
+
+1.  **Instalação**: `uv sync`
+2.  **Configuração**: Adicione os IDs dos vídeos em `config/settings.json`.
+3.  **Bypass de Bot (Opcional)**: Salve seus cookies do YouTube em `cookies.txt`.
+4.  **Refinamento de Tempo**:
+    ```bash
+    uv run src/refine_start_times.py
+    ```
+5.  **Coleta e Processamento**:
+    ```bash
+    uv run src/pipeline.py
+    ```
+6.  **Gerar Análise**:
+    ```bash
+    uv run jupyter nbconvert --to html --execute analysis.ipynb
+    ```
 
 ---
-*Desenvolvido para análise de engajamento digital em transmissões esportivas.*
+*Projeto desenvolvido para fins de pesquisa em engajamento digital e análise de dados esportivos.*
