@@ -21,22 +21,23 @@ def s2t(seconds):
     if hours > 0: return f"{hours:02d}:{minutes:02d}:{secs:02d}"
     return f"{minutes:02d}:{secs:02d}"
 
-def get_ocr_time(image_path):
+def get_ocr_time(image_path, video_id, attempt):
     img = cv2.imread(image_path)
     if img is None: return None
     h, w = img.shape[:2]
     
-    # ROI mais generosa para garantir que nada seja cortado
+    # ROI (Top-left area where clock usually is)
     roi = img[int(h*0.03):int(h*0.10), int(w*0.04):int(w*0.14)]
     
-    debug_roi_path = image_path.replace('.png', '_roi.png')
-    cv2.imwrite(debug_roi_path, roi)
+    # Salva o ROI em pasta específica
+    roi_dir = 'data/frames_refine/roi'
+    os.makedirs(roi_dir, exist_ok=True)
+    roi_path = os.path.join(roi_dir, f"{video_id}_att{attempt}_roi.png")
+    cv2.imwrite(roi_path, roi)
     
     gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
     scaled = cv2.resize(gray, None, fx=5, fy=5, interpolation=cv2.INTER_CUBIC)
     
-    # Testamos diferentes binarizações
-    # Como o texto é branco em fundo escuro, BINARY normal costuma ser bom
     methods = [
         ("otsu_inv", cv2.threshold(scaled, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]),
         ("fixed_inv", cv2.threshold(scaled, 150, 255, cv2.THRESH_BINARY_INV)[1]),
@@ -50,16 +51,23 @@ def get_ocr_time(image_path):
             matches = re.findall(r'\d{1,2}:\d{2}', text)
             if matches:
                 m_time = t2s(matches[0])
-                if 300 < m_time < 1500: # Sanity check (entre 5 e 25 min)
+                # Validação: aceitamos tempo coerente com a tentativa
+                min_expected = 300 if attempt == 1 else 900
+                max_expected = 900 if attempt == 1 else 1500
+                if min_expected < m_time < max_expected:
                     return m_time
     return None
 
-def download_and_extract(v):
+def download_and_extract(v, attempt=1):
     v_id = v['video_id']
     current_start_sec = t2s(v['game_start_time'])
-    target_video_sec = current_start_sec + 600 # 10 min depois
+    # Se attempt 1 -> +10min, attempt 2 -> +20min
+    offset = 600 * attempt
+    target_video_sec = current_start_sec + offset
     
-    frame_path = os.path.join('data/frames_refine', f"{v_id}_refine_check.png")
+    full_dir = 'data/frames_refine/full'
+    os.makedirs(full_dir, exist_ok=True)
+    frame_path = os.path.join(full_dir, f"{v_id}_att{attempt}.png")
     
     if os.path.exists(frame_path):
         return v_id, frame_path, target_video_sec
@@ -69,52 +77,61 @@ def download_and_extract(v):
         v_url = url_res.stdout.strip()
         subprocess.run(['ffmpeg', '-ss', str(target_video_sec), '-i', v_url, '-frames:v', '1', '-q:v', '2', '-y', frame_path], check=True, capture_output=True)
         return v_id, frame_path, target_video_sec
-    except Exception as e:
-        print(f"Erro no download de {v_id}: {e}")
+    except Exception:
         return v_id, None, target_video_sec
 
-def main():
-    with open('config/settings.json', 'r') as f:
-        videos = json.load(f)
+def run_pass(videos, attempt):
+    print(f"\n--- Passagem {attempt} (+{attempt*10}min) ---")
     
-    frames_dir = 'data/frames_refine'
-    os.makedirs(frames_dir, exist_ok=True)
-
-    print(f"--- [1/2] Baixando frames em paralelo ---")
-    results = []
-    # Usar 4 workers para não sobrecarregar mas ser rápido
+    # 1. Download
     with ThreadPoolExecutor(max_workers=4) as executor:
-        results = list(executor.map(download_and_extract, videos))
-
-    print(f"--- [2/2] Processando OCR ---")
-    refined_settings = []
+        results = list(executor.map(lambda v: download_and_extract(v, attempt), videos))
     
-    # Mapeia configs originais para facilitar busca
+    # 2. OCR e Refinamento
+    success_configs = []
+    failed_videos = []
     video_map = {v['video_id']: v for v in videos}
 
     for v_id, frame_path, target_sec in results:
         v_orig = video_map[v_id]
         if not frame_path:
-            refined_settings.append(v_orig)
+            failed_videos.append(v_orig)
             continue
             
-        match_time_sec = get_ocr_time(frame_path)
+        match_time_sec = get_ocr_time(frame_path, v_id, attempt)
         if match_time_sec:
             real_start_sec = target_sec - match_time_sec
             real_start_str = s2t(real_start_sec)
             print(f"   [OK] {v_id}: Placar {s2t(match_time_sec)} -> Início {real_start_str}")
             v_ref = v_orig.copy()
             v_ref['game_start_time'] = real_start_str
-            refined_settings.append(v_ref)
+            success_configs.append(v_ref)
         else:
-            print(f"   [FALHA] {v_id}: OCR falhou.")
-            refined_settings.append(v_orig)
+            print(f"   [FALHA] {v_id}: OCR não leu o tempo.")
+            failed_videos.append(v_orig)
+            
+    return success_configs, failed_videos
 
+def main():
+    with open('config/settings.json', 'r') as f:
+        all_videos = json.load(f)
+
+    # Primeira Passagem (+10 min)
+    success_1, failed_1 = run_pass(all_videos, attempt=1)
+    
+    # Segunda Passagem (+20 min) para os que falharam
+    success_2, final_failed = run_pass(failed_1, attempt=2)
+    
+    final_refined = success_1 + success_2 + final_failed
+    
+    # Salva
     output_path = 'config/settings_refined_full.json'
     with open(output_path, 'w', encoding='utf-8') as f:
-        json.dump(refined_settings, f, indent=4, ensure_ascii=False)
+        json.dump(final_refined, f, indent=4, ensure_ascii=False)
     
-    print(f"\nFinalizado! Total processado: {len(refined_settings)}")
+    print(f"\nFinalizado!")
+    print(f"Total Sucesso: {len(success_1 + success_2)}")
+    print(f"Total Falha: {len(final_failed)}")
     print(f"Arquivo salvo em: {output_path}")
 
 if __name__ == "__main__":
