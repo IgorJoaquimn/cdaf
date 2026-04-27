@@ -33,7 +33,7 @@ def get_ocr_time(image_path, video_id, offset_min):
         ("center_ish", img[int(h*0.05):int(h*0.15), int(w*0.10):int(w*0.30)])
     ]
     
-    roi_dir = 'data/frames_refine/roi'
+    roi_dir = 'data/verification/roi'
     os.makedirs(roi_dir, exist_ok=True)
     
     for roi_name, roi in rois:
@@ -76,7 +76,7 @@ def download_and_extract(v, offset_min):
     current_start_sec = t2s(v['game_start_time'])
     target_video_sec = current_start_sec + (offset_min * 60)
     
-    full_dir = 'data/frames_refine/full'
+    full_dir = 'data/verification/full'
     os.makedirs(full_dir, exist_ok=True)
     frame_path = os.path.join(full_dir, f"{v_id}_off{offset_min}m.png")
     
@@ -155,7 +155,7 @@ def main():
     video_order = {v['video_id']: i for i, v in enumerate(all_videos)}
     final_refined.sort(key=lambda v: video_order.get(v['video_id'], 999))
     
-    with open('config/settings_refined_full.json', 'w', encoding='utf-8') as f:
+    with open('config/settings.json', 'w', encoding='utf-8') as f:
         json.dump(final_refined, f, indent=4, ensure_ascii=False)
     
     print(f"\nFinalizado! Recuperados: {len(target_videos) - len(current_batch)} de {len(target_videos)}")
