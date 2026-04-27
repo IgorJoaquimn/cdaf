@@ -28,18 +28,61 @@ def get_match_data(ts, start, fh_end, sh_start, sh_end):
     return "Pós-jogo", "Pós"
 
 def main():
+    # 1. Carregar Configurações
     config_path = 'config/settings.json'
     with open(config_path, 'r') as f:
         config = json.load(f)
 
+    video_id = config.get('video_id')
     v_start = time_to_seconds(config.get('game_start_time'))
     fh_end = time_to_seconds(config.get('first_half_end'))
     sh_start = time_to_seconds(config.get('second_half_start'))
     sh_end = time_to_seconds(config.get('second_half_end'))
     
-    raw_file = glob.glob(f"data/raw/chat_download*.live_chat.json")[0]
+    video_url = f"https://www.youtube.com/watch?v={video_id}"
+    raw_dir = 'data/raw'
+    os.makedirs(raw_dir, exist_ok=True)
+    output_template = os.path.join(raw_dir, 'chat_download')
 
+    print(f"--- Iniciando Pipeline ---")
+    
+    # 2. Obter Título do Vídeo
+    print("\n[1/3] Obtendo título do vídeo...")
+    try:
+        title_result = subprocess.run(
+            ['yt-dlp', '--get-title', video_url],
+            capture_output=True, text=True, check=True
+        )
+        video_title = title_result.stdout.strip()
+        
+        # Salva o título em um arquivo JSON separado
+        video_info_path = 'config/video_info.json'
+        with open(video_info_path, 'w', encoding='utf-8') as f:
+            json.dump({"video_id": video_id, "title": video_title}, f, indent=4, ensure_ascii=False)
+        print(f"Título salvo: {video_title}")
+    except Exception as e:
+        print(f"Aviso: Não foi possível obter o título do vídeo: {e}")
+
+    # 3. Coletar dados com yt-dlp
+    json_files = glob.glob(f"{output_template}*.live_chat.json")
+    if not json_files:
+        print("\n[2/3] Coletando chat via yt-dlp...")
+        cmd = ['yt-dlp', '--skip-download', '--write-subs', '--sub-langs', 'live_chat', '--output', output_template, video_url]
+        try:
+            subprocess.run(cmd, check=True)
+            json_files = glob.glob(f"{output_template}*.live_chat.json")
+        except subprocess.CalledProcessError as e:
+            print(f"Erro ao executar yt-dlp: {e}")
+            return
+    else:
+        print("\n[2/3] Arquivo bruto encontrado. Pulando download.")
+    
+    raw_file = json_files[0]
+
+    # 4. Processar
+    print("\n[3/3] Processando mensagens...")
     mensagens = []
+
     with open(raw_file, 'r', encoding='utf-8') as f:
         for line in f:
             if not line.strip(): continue
@@ -71,9 +114,10 @@ def main():
             except Exception: continue
 
     df_chat = pd.DataFrame(mensagens)
-    output_path = os.path.join('data/processed', f"chat_{config['video_id']}_processed.csv")
+    df_chat = df_chat.sort_values(by='timestamp_video_segundos')
+    output_path = os.path.join('data/processed', f"chat_{video_id}_processed.csv")
     df_chat.to_csv(output_path, index=False, encoding='utf-8')
-    print(f"Pipeline concluído com labels de futebol.")
+    print(f"\nPipeline concluído com sucesso!")
 
 if __name__ == "__main__":
     main()
