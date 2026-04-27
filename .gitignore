@@ -13,6 +13,7 @@ analysis.html
 # We ignore raw download data as it can be large
 data/raw/
 data/processed/
+data/
 
 # Project specific
 uv.lock
