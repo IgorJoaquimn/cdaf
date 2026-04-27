@@ -13,33 +13,38 @@ Este projeto automatiza a coleta e análise de mensagens de chat ao vivo do YouT
 
 ```text
 ├── config/
-│   └── settings.json      # Configurações (ID do vídeo, tempo de início)
+│   ├── settings.json      # Configurações (ID do vídeo, tempo de início)
+│   └── video_info.json    # Títulos dos vídeos extraídos
 ├── data/
-│   ├── raw/               # JSONs brutos do YouTube (ignorado no git)
-│   └── processed/         # CSVs processados com tempos oficiais
+│   ├── raw/               # JSONs brutos do YouTube
+│   ├── processed/         # CSVs processados com tempos oficiais
+│   └── frames/            # Frames extraídos para verificação/OCR
 ├── src/
-│   └── pipeline.py        # Script principal de coleta e processamento
+│   ├── pipeline.py        # Coleta e processamento de chat
+│   ├── extract_frame.py   # Extração de frames no início do jogo
+│   └── extract_time.py    # OCR para ler o placar (Vision)
 ├── analysis.ipynb         # Notebook para visualização de dados
-└── pyproject.toml         # Dependências do projeto (gerenciado pelo uv)
+└── pyproject.toml         # Dependências (uv)
 ```
 
 ## 🛠️ Instalação e Uso
 
-Este projeto utiliza o [uv](https://github.com/astral-sh/uv) para gerenciamento de pacotes.
+...
 
-1. **Configurar o vídeo**:
-   Edite o arquivo `config/settings.json` com o ID do vídeo e os tempos de início/fim dos tempos.
+### 🔍 Vision (Opcional)
 
-2. **Executar o Pipeline**:
+Para extrair e validar o tempo do jogo diretamente do placar na tela:
+
+1. **Extrair o frame**:
    ```bash
-   uv run src/pipeline.py
+   uv run src/extract_frame.py
    ```
 
-3. **Gerar a Análise**:
+2. **Ler o tempo via OCR**:
    ```bash
-   uv run jupyter nbconvert --to html --execute analysis.ipynb
+   uv run src/extract_time.py data/frames/NOME_DO_ARQUIVO.png
    ```
-   Isso gerará um arquivo `analysis.html` com todos os gráficos.
+
 
 ## 📊 Gráficos Gerados
 
