@@ -1,0 +1,15 @@
+[project]
+name = "cdaf"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "chat-downloader>=0.2.8",
+    "ipykernel>=7.2.0",
+    "matplotlib>=3.10.9",
+    "nbconvert>=7.17.1",
+    "pandas>=3.0.2",
+    "pip>=26.1",
+    "yt-dlp>=2026.3.17",
+]

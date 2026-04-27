@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+.env
+
+# Jupyter
+.ipynb_checkpoints
+analysis.html
+
+# Data
+# We ignore raw download data as it can be large
+data/raw/
+data/processed/
+
+# Project specific
+uv.lock
