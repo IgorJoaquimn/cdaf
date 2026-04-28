@@ -26,6 +26,7 @@ dependencies = [
     "tqdm>=4.67.3",
     "transformers>=5.6.2",
     "unidecode>=1.4.0",
+    "vllm>=0.20.0",
     "wordcloud>=1.9.6",
     "yt-dlp>=2026.3.17",
 ]

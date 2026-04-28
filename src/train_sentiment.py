@@ -11,9 +11,10 @@ model_name = "neuralmind/bert-base-portuguese-cased"
 output_dir = "./bertimbau-bundesliga"
 
 # 2. Carregar e preparar dados
-df = pd.read_csv('data/processed/consolidated/gold_standard_v2_1000.csv')
-dataset = Dataset.from_pandas(df[['mensagem', 'sentiment_manual']].rename(columns={'sentiment_manual': 'label'}))
-dataset = dataset.train_test_split(test_size=0.2, seed=42)
+# Usando o novo gold standard gerado pelo vLLM (Qwen 7B)
+df = pd.read_csv('data/processed/consolidated/gold_standard_vllm.csv')
+dataset = Dataset.from_pandas(df[['mensagem', 'sentiment_vllm']].rename(columns={'sentiment_vllm': 'label'}))
+dataset = dataset.train_test_split(test_size=0.15, seed=42)
 
 # 3. Tokenização
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -27,24 +28,30 @@ model = AutoModelForSequenceClassification.from_pretrained(model_name, num_label
 
 # 5. Métricas
 f1_metric = evaluate.load("f1")
+accuracy_metric = evaluate.load("accuracy")
+
 def compute_metrics(eval_pred):
     logits, labels = eval_pred
     predictions = np.argmax(logits, axis=-1)
-    return f1_metric.compute(predictions=predictions, references=labels, average="macro")
+    f1 = f1_metric.compute(predictions=predictions, references=labels, average="macro")["f1"]
+    acc = accuracy_metric.compute(predictions=predictions, references=labels)["accuracy"]
+    return {"f1": f1, "accuracy": acc}
 
 # 6. Treinamento
 training_args = TrainingArguments(
     output_dir=output_dir,
-    num_train_epochs=10, # Mais épocas para um dataset pequeno
-    per_device_train_batch_size=8,
-    per_device_eval_batch_size=8,
-    warmup_steps=50,
+    num_train_epochs=8, 
+    per_device_train_batch_size=32, # Aumentado conforme solicitado
+    per_device_eval_batch_size=32,
+    learning_rate=3e-5,
+    warmup_ratio=0.1,
     weight_decay=0.01,
     logging_dir='./logs',
-    logging_steps=10,
+    logging_steps=5,
     eval_strategy="epoch",
     save_strategy="epoch",
     load_best_model_at_end=True,
+    metric_for_best_model="f1",
     report_to="none"
 )
 
