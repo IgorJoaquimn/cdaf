@@ -11,7 +11,7 @@ model_name = "neuralmind/bert-base-portuguese-cased"
 output_dir = "./bertimbau-bundesliga"
 
 # 2. Carregar e preparar dados
-df = pd.read_csv('data/processed/consolidated/gold_standard_labeled.csv')
+df = pd.read_csv('data/processed/consolidated/gold_standard_v2_1000.csv')
 dataset = Dataset.from_pandas(df[['mensagem', 'sentiment_manual']].rename(columns={'sentiment_manual': 'label'}))
 dataset = dataset.train_test_split(test_size=0.2, seed=42)
 
