@@ -8,9 +8,13 @@ __pycache__/
 # Jupyter
 .ipynb_checkpoints
 analysis.html
+preprocessing.html
+sentiment_analysis.html
 
-# Data - IGNORE ALL DATA
+# Data & Models - EXCLUDE FROM GIT
 data/
+bertimbau-bundesliga/
+logs/
 *.csv
 *.parquet
 *.json
