@@ -44,12 +44,14 @@ def get_stats(file_path):
 
 def main():
     results = []
-    for f in sorted(glob.glob('data/events/2024-2025/*.json')):
+    event_files = sorted(glob.glob('data/events/2024-2025/*.json'))
+    print(f"Summarizing {len(event_files)} games...")
+    for f in event_files:
         results.append(get_stats(f))
     
     df_events = pd.DataFrame(results)
     df_events.to_csv('data/event_stats_summary.csv', index=False)
-    print("Event stats summary saved to data/event_stats_summary.csv")
+    print(f"Event stats summary for {len(results)} matches saved to data/event_stats_summary.csv")
 
 if __name__ == "__main__":
     main()
