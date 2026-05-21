@@ -124,10 +124,13 @@ def parse_events(path: str, video_id: str | None = None) -> tuple[list, list]:
         ge_type = ge.get("GAME_EVENT_TYPE")
         x, y = ball.get("X"), ball.get("Y")
 
-        # Match minute (Period 2 raw clock already starts at 2700s = 45m, so no offset is needed)
+        # Match minute (Period 1 capped at 45, Period 2 starts at 46 and capped at 90 to prevent overlap)
         match_minute: int | None = None
         if period and clock is not None:
-            match_minute = int(clock // 60)
+            if period == 1:
+                match_minute = min(int(clock // 60), 45)
+            elif period == 2:
+                match_minute = min(int((clock - 2700) // 60) + 46, 90)
 
         # --- Possession events (for xT / Momentum) ---
         if pe_type and period and clock is not None and x is not None and home_team is not None:
