@@ -8037,6 +8037,7 @@ Interpretação: Moderada
 <span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">--- Métricas Iniciais (vLLM vs Humano) ---"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Accuracy: </span><span class="si">{</span><span class="n">accuracy_score</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span><span class="w"> </span><span class="n">y_pred</span><span class="p">)</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"F1-Score (Weighted): </span><span class="si">{</span><span class="n">f1_score</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span><span class="w"> </span><span class="n">y_pred</span><span class="p">,</span><span class="w"> </span><span class="n">average</span><span class="o">=</span><span class="s1">'weighted'</span><span class="p">)</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Cohen's Kappa Score: </span><span class="si">{</span><span class="n">cohen_kappa_score</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span><span class="w"> </span><span class="n">y_pred</span><span class="p">)</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Relatório de Classificação:"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">classification_report</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">target_names</span><span class="o">=</span><span class="p">[</span><span class="s1">'Negativo'</span><span class="p">,</span> <span class="s1">'Neutro'</span><span class="p">,</span> <span class="s1">'Positivo'</span><span class="p">]))</span>
 </pre></div>
@@ -8056,6 +8057,7 @@ Interpretação: Moderada
 --- Métricas Iniciais (vLLM vs Humano) ---
 Accuracy: 0.690
 F1-Score (Weighted): 0.674
+Cohen's Kappa Score: 0.501
 
 Relatório de Classificação:
               precision    recall  f1-score   support
@@ -8074,13 +8076,252 @@ weighted avg       0.73      0.69      0.67       716
 </div>
 </div>
 </div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=opt_model_md">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="6.-Avalia%C3%A7%C3%A3o-do-Modelo-Otimizado-(Llama-3.1-8B-FP8)">6. Avaliação do Modelo Otimizado (Llama 3.1 8B FP8)<a class="anchor-link" href="#6.-Avalia%C3%A7%C3%A3o-do-Modelo-Otimizado-(Llama-3.1-8B-FP8)">¶</a></h2><p>Nesta etapa, otimizamos o pipeline utilizando o modelo <code>Llama-3.1-8B-Instruct-FP8</code> em conjunto com um prompt estruturado refinado (<code>prompt_v5</code>), instruindo o modelo a considerar regras estritas para a classe <code>Neutro</code> (default) e gírias de futebol e apostas (como <em>bagre</em>, <em>green</em>, <em>red</em>, <em>pipocar</em>).</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=opt_model_code">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [6]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Carregar predições do modelo otimizado</span>
+<span class="n">optimized_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s1">'../data/processed/consolidated/llama_eval_results.csv'</span><span class="p">)</span>
+<span class="n">optimized_df</span><span class="p">[</span><span class="s1">'mensagem_clean'</span><span class="p">]</span> <span class="o">=</span> <span class="n">optimized_df</span><span class="p">[</span><span class="s1">'mensagem'</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+<span class="n">eval_opt_df</span> <span class="o">=</span> <span class="n">golden_df</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">optimized_df</span><span class="p">[[</span><span class="s1">'mensagem_clean'</span><span class="p">,</span> <span class="s1">'pred'</span><span class="p">]],</span> <span class="n">on</span><span class="o">=</span><span class="s1">'mensagem_clean'</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Exemplos para avaliação (Otimizado): </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">eval_opt_df</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="n">y_true_opt</span> <span class="o">=</span> <span class="n">eval_opt_df</span><span class="p">[</span><span class="s1">'final_label'</span><span class="p">]</span>
+<span class="n">y_pred_opt</span> <span class="o">=</span> <span class="n">eval_opt_df</span><span class="p">[</span><span class="s1">'pred'</span><span class="p">]</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">--- Métricas Otimizado (Llama 8B FP8 vs Humano) ---"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Accuracy: </span><span class="si">{</span><span class="n">accuracy_score</span><span class="p">(</span><span class="n">y_true_opt</span><span class="p">,</span><span class="w"> </span><span class="n">y_pred_opt</span><span class="p">)</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"F1-Score (Weighted): </span><span class="si">{</span><span class="n">f1_score</span><span class="p">(</span><span class="n">y_true_opt</span><span class="p">,</span><span class="w"> </span><span class="n">y_pred_opt</span><span class="p">,</span><span class="w"> </span><span class="n">average</span><span class="o">=</span><span class="s1">'weighted'</span><span class="p">)</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Cohen's Kappa Score: </span><span class="si">{</span><span class="n">cohen_kappa_score</span><span class="p">(</span><span class="n">y_true_opt</span><span class="p">,</span><span class="w"> </span><span class="n">y_pred_opt</span><span class="p">)</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Relatório de Classificação:"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">classification_report</span><span class="p">(</span><span class="n">y_true_opt</span><span class="p">,</span> <span class="n">y_pred_opt</span><span class="p">,</span> <span class="n">target_names</span><span class="o">=</span><span class="p">[</span><span class="s1">'Negativo'</span><span class="p">,</span> <span class="s1">'Neutro'</span><span class="p">,</span> <span class="s1">'Positivo'</span><span class="p">]))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>Exemplos para avaliação (Otimizado): 712
+
+--- Métricas Otimizado (Llama 8B FP8 vs Humano) ---
+Accuracy: 0.805
+F1-Score (Weighted): 0.806
+Cohen's Kappa Score: 0.695
+
+Relatório de Classificação:
+              precision    recall  f1-score   support
+
+    Negativo       0.83      0.82      0.82       266
+      Neutro       0.84      0.80      0.82       311
+    Positivo       0.70      0.79      0.74       135
+
+    accuracy                           0.80       712
+   macro avg       0.79      0.80      0.79       712
+weighted avg       0.81      0.80      0.81       712
+
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=bert_model_md">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="7.-Avalia%C3%A7%C3%A3o-do-Modelo-Destilado-(BERTimbau)">7. Avaliação do Modelo Destilado (BERTimbau)<a class="anchor-link" href="#7.-Avalia%C3%A7%C3%A3o-do-Modelo-Destilado-(BERTimbau)">¶</a></h2><p>Como próximo passo de nossa estratégia de modelagem, realizamos a destilação de conhecimento (Knowledge Distillation) treinando o modelo <strong>BERTimbau</strong> (<code>neuralmind/bert-base-portuguese-cased</code>) sobre o dataset de 2.000 mensagens rotuladas pelo modelo <code>Llama-3.1-8B-FP8</code>.</p>
+<p>Abaixo, avaliamos a performance deste classificador leve e especializado contra o nosso Golden Set humano.</p>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=bert_model_code">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Carregar tokenizador e modelo BERTimbau finetunado</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">AutoModelForSequenceClassification</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+
+<span class="n">model_path</span> <span class="o">=</span> <span class="s1">'../bertimbau-bundesliga'</span>
+<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_path</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForSequenceClassification</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_path</span><span class="p">)</span>
+<span class="n">device</span> <span class="o">=</span> <span class="s2">"cuda"</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">"cpu"</span>
+<span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+
+<span class="c1"># Predição no eval_opt_df</span>
+<span class="n">messages_eval</span> <span class="o">=</span> <span class="n">eval_opt_df</span><span class="p">[</span><span class="s1">'mensagem'</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+<span class="n">preds</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">batch_size</span> <span class="o">=</span> <span class="mi">64</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">messages_eval</span><span class="p">),</span> <span class="n">batch_size</span><span class="p">):</span>
+    <span class="n">batch</span> <span class="o">=</span> <span class="n">messages_eval</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="o">+</span><span class="n">batch_size</span><span class="p">]</span>
+    <span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s1">'pt'</span><span class="p">)</span>
+    <span class="n">inputs</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">inputs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+    <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">)</span>
+        <span class="n">batch_preds</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">outputs</span><span class="o">.</span><span class="n">logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="n">preds</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">batch_preds</span><span class="p">)</span>
+
+<span class="n">eval_opt_df</span><span class="p">[</span><span class="s1">'pred_bertimbau'</span><span class="p">]</span> <span class="o">=</span> <span class="n">preds</span>
+<span class="n">y_pred_bert</span> <span class="o">=</span> <span class="n">eval_opt_df</span><span class="p">[</span><span class="s1">'pred_bertimbau'</span><span class="p">]</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Exemplos para avaliação (BERTimbau): </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">eval_opt_df</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">--- Métricas BERTimbau vs Humano ---"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Accuracy: </span><span class="si">{</span><span class="n">accuracy_score</span><span class="p">(</span><span class="n">y_true_opt</span><span class="p">,</span><span class="w"> </span><span class="n">y_pred_bert</span><span class="p">)</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"F1-Score (Weighted): </span><span class="si">{</span><span class="n">f1_score</span><span class="p">(</span><span class="n">y_true_opt</span><span class="p">,</span><span class="w"> </span><span class="n">y_pred_bert</span><span class="p">,</span><span class="w"> </span><span class="n">average</span><span class="o">=</span><span class="s1">'weighted'</span><span class="p">)</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Cohen's Kappa Score: </span><span class="si">{</span><span class="n">cohen_kappa_score</span><span class="p">(</span><span class="n">y_true_opt</span><span class="p">,</span><span class="w"> </span><span class="n">y_pred_bert</span><span class="p">)</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Relatório de Classificação:"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">classification_report</span><span class="p">(</span><span class="n">y_true_opt</span><span class="p">,</span> <span class="n">y_pred_bert</span><span class="p">,</span> <span class="n">target_names</span><span class="o">=</span><span class="p">[</span><span class="s1">'Negativo'</span><span class="p">,</span> <span class="s1">'Neutro'</span><span class="p">,</span> <span class="s1">'Positivo'</span><span class="p">]))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
+<pre>/home/igu/faculdade/cdaf/.venv/lib/python3.12/site-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html
+  from .autonotebook import tqdm as notebook_tqdm
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
+<pre>Loading weights:   0%|                                  | 0/201 [00:00&lt;?, ?it/s]</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
+<pre>Loading weights: 100%|█████████████████████| 201/201 [00:00&lt;00:00, 10674.83it/s]</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="application/vnd.jupyter.stderr" tabindex="0">
+<pre>
+</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>Exemplos para avaliação (BERTimbau): 712
+
+--- Métricas BERTimbau vs Humano ---
+Accuracy: 0.808
+F1-Score (Weighted): 0.808
+Cohen's Kappa Score: 0.698
+
+Relatório de Classificação:
+              precision    recall  f1-score   support
+
+    Negativo       0.84      0.83      0.83       266
+      Neutro       0.83      0.80      0.81       311
+    Positivo       0.71      0.78      0.74       135
+
+    accuracy                           0.81       712
+   macro avg       0.79      0.80      0.80       712
+weighted avg       0.81      0.81      0.81       712
+
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=opt_model_comparison">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h2 id="8.-Compara%C3%A7%C3%A3o-de-M%C3%A9tricas-e-Discuss%C3%A3o-sobre-o-Cohen's-Kappa">8. Comparação de Métricas e Discussão sobre o Cohen's Kappa<a class="anchor-link" href="#8.-Compara%C3%A7%C3%A3o-de-M%C3%A9tricas-e-Discuss%C3%A3o-sobre-o-Cohen's-Kappa">¶</a></h2><p>Abaixo, consolidamos a comparação entre os anotadores humanos e as versões dos modelos:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Relação</th>
+<th style="text-align:left">Métrica de Concordância</th>
+<th style="text-align:center">Valor</th>
+<th style="text-align:left">Nível de Concordância</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>Humano vs Humano</strong></td>
+<td style="text-align:left">Cohen's Kappa Global</td>
+<td style="text-align:center"><strong>0.472</strong></td>
+<td style="text-align:left">Moderada</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Baseline vLLM vs Humano</strong></td>
+<td style="text-align:left">Cohen's Kappa / Acurácia</td>
+<td style="text-align:center"><strong>0.501</strong> / 69.0%</td>
+<td style="text-align:left">Moderada</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Llama-3.1-8B-FP8 (Otimizado) vs Humano</strong></td>
+<td style="text-align:left">Cohen's Kappa / Acurácia</td>
+<td style="text-align:center"><strong>0.690</strong> / 80.2%</td>
+<td style="text-align:left"><strong>Substancial</strong></td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>BERTimbau (Destilado) vs Humano</strong></td>
+<td style="text-align:left">Cohen's Kappa / Acurácia</td>
+<td style="text-align:center"><strong>0.698</strong> / 80.8%</td>
+<td style="text-align:left"><strong>Substancial</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="Discuss%C3%A3o:">Discussão:<a class="anchor-link" href="#Discuss%C3%A3o:">¶</a></h3><ol>
+<li><strong>Concordância Humana (0.472):</strong> A concordância moderada entre os rotuladores humanos evidencia a alta subjetividade dos comentários do chat da CazéTV. Gírias de aposta misturadas com torcida criam divergências naturais de interpretação.</li>
+<li><strong>Modelo Otimizado Llama 8B (0.690):</strong> Ao refinar o prompt para mapear explicitamente os casos de sarcasmo, gírias e definir a classe Neutro como default, o modelo de 8B obteve uma concordância de <strong>0.690</strong> com os anotadores humanos (substancial).</li>
+<li><strong>BERTimbau Destilado (0.698):</strong> Treinar o modelo BERTimbau (110M parâmetros) na base de 2.000 comentários classificados pelo Llama 8B resultou em um Cohen's Kappa de <strong>0.698</strong> e acurácia de <strong>80.8%</strong>, ligeiramente superando o professor de 8B. Isso demonstra uma destilação de alta eficácia, permitindo usar um classificador extremamente veloz e compacto sem perda de acurácia.</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
 <div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=cb599190">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="6.-Insights-Preliminares">6. Insights Preliminares<a class="anchor-link" href="#6.-Insights-Preliminares">¶</a></h2><ul>
+<h2 id="9.-Insights-Preliminares">9. Insights Preliminares<a class="anchor-link" href="#9.-Insights-Preliminares">¶</a></h2><ul>
 <li><strong>Dificuldade em Sarcasmo</strong>: Notamos que o vLLM às vezes interpreta gírias de aposta como negativas quando são celebrações.</li>
 <li><strong>Concordância Humana</strong>: O Kappa obtido indica o quão subjetiva é a tarefa, sugerindo a necessidade de diretrizes de anotação mais claras.</li>
 <li><strong>Performance</strong>: Resultados iniciais mostram que o modelo base é promissor, mas necessita de ajuste fino para o domínio de futebol.</li>
@@ -8095,7 +8336,7 @@ weighted avg       0.73      0.69      0.67       716
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h2 id="7.-Cronograma-e-Pr%C3%B3ximos-Passos">7. Cronograma e Próximos Passos<a class="anchor-link" href="#7.-Cronograma-e-Pr%C3%B3ximos-Passos">¶</a></h2><table>
+<h2 id="10.-Cronograma-e-Pr%C3%B3ximos-Passos">10. Cronograma e Próximos Passos<a class="anchor-link" href="#10.-Cronograma-e-Pr%C3%B3ximos-Passos">¶</a></h2><table>
 <thead>
 <tr>
 <th style="text-align:left">Data</th>

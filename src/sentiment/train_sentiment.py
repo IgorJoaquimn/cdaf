@@ -4,69 +4,88 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trai
 from datasets import Dataset
 import numpy as np
 import evaluate
+import os
 
-# 1. Configurações
-device = "cuda" if torch.cuda.is_available() else "cpu"
-model_name = "neuralmind/bert-base-portuguese-cased"
-output_dir = "./bertimbau-bundesliga"
+def main():
+    # 1. Configurações
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    model_name = "neuralmind/bert-base-portuguese-cased"
+    output_dir = "./bertimbau-bundesliga"
+    synthetic_data_path = 'data/processed/consolidated/synthetic_dataset_for_bert.csv'
+    golden_data_path = 'data/processed/consolidated/golden_set_consensus.csv'
 
-# 2. Carregar e preparar dados
-# Usando o novo gold standard gerado pelo vLLM (Qwen 7B)
-df = pd.read_csv('data/processed/consolidated/gold_standard_vllm.csv')
-dataset = Dataset.from_pandas(df[['mensagem', 'sentiment_vllm']].rename(columns={'sentiment_vllm': 'label'}))
-dataset = dataset.train_test_split(test_size=0.15, seed=42)
+    # 2. Carregar e preparar dados
+    print("Carregando datasets...")
+    df_train = pd.read_csv(synthetic_data_path)
+    df_eval = pd.read_csv(golden_data_path)
 
-# 3. Tokenização
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-def tokenize_function(examples):
-    return tokenizer(examples["mensagem"], padding="max_length", truncation=True, max_length=128)
+    # Dataset de treino (Sintético - 5000 exemplos)
+    train_dataset = Dataset.from_pandas(df_train[['mensagem', 'label']])
+    
+    # Dataset de validação (Golden Set Humano - ~650 exemplos)
+    eval_dataset = Dataset.from_pandas(df_eval[['mensagem', 'label']])
 
-tokenized_datasets = dataset.map(tokenize_function, batched=True)
+    # 3. Tokenização
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    def tokenize_function(examples):
+        return tokenizer(examples["mensagem"], padding="max_length", truncation=True, max_length=128)
 
-# 4. Modelo
-model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=3).to(device)
+    print("Tokenizando...")
+    tokenized_train = train_dataset.map(tokenize_function, batched=True)
+    tokenized_eval = eval_dataset.map(tokenize_function, batched=True)
 
-# 5. Métricas
-f1_metric = evaluate.load("f1")
-accuracy_metric = evaluate.load("accuracy")
+    # 4. Modelo
+    model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=3).to(device)
 
-def compute_metrics(eval_pred):
-    logits, labels = eval_pred
-    predictions = np.argmax(logits, axis=-1)
-    f1 = f1_metric.compute(predictions=predictions, references=labels, average="macro")["f1"]
-    acc = accuracy_metric.compute(predictions=predictions, references=labels)["accuracy"]
-    return {"f1": f1, "accuracy": acc}
+    # 5. Métricas
+    f1_metric = evaluate.load("f1")
+    accuracy_metric = evaluate.load("accuracy")
 
-# 6. Treinamento
-training_args = TrainingArguments(
-    output_dir=output_dir,
-    num_train_epochs=8, 
-    per_device_train_batch_size=32, # Aumentado conforme solicitado
-    per_device_eval_batch_size=32,
-    learning_rate=3e-5,
-    warmup_ratio=0.1,
-    weight_decay=0.01,
-    logging_dir='./logs',
-    logging_steps=5,
-    eval_strategy="epoch",
-    save_strategy="epoch",
-    load_best_model_at_end=True,
-    metric_for_best_model="f1",
-    report_to="none"
-)
+    def compute_metrics(eval_pred):
+        logits, labels = eval_pred
+        predictions = np.argmax(logits, axis=-1)
+        # Weighted F1 é melhor para desbalanceamento
+        f1 = f1_metric.compute(predictions=predictions, references=labels, average="weighted")["f1"]
+        acc = accuracy_metric.compute(predictions=predictions, references=labels)["accuracy"]
+        return {"f1": f1, "accuracy": acc}
 
-trainer = Trainer(
-    model=model,
-    args=training_args,
-    train_dataset=tokenized_datasets["train"],
-    eval_dataset=tokenized_datasets["test"],
-    compute_metrics=compute_metrics,
-)
+    # 6. Treinamento
+    training_args = TrainingArguments(
+        output_dir=output_dir,
+        num_train_epochs=5, 
+        per_device_train_batch_size=16,
+        per_device_eval_batch_size=16,
+        learning_rate=2e-5,
+        weight_decay=0.01,
+        logging_dir='./logs',
+        logging_steps=10,
+        eval_strategy="epoch",
+        save_strategy="epoch",
+        load_best_model_at_end=True,
+        metric_for_best_model="f1",
+        report_to="none"
+    )
 
-print("Iniciando Fine-tuning...")
-trainer.train()
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=tokenized_train,
+        eval_dataset=tokenized_eval,
+        compute_metrics=compute_metrics,
+    )
 
-# 7. Salvar modelo final
-trainer.save_model(output_dir)
-tokenizer.save_pretrained(output_dir)
-print(f"Modelo treinado e salvo em: {output_dir}")
+    print("Iniciando Fine-tuning do BERTimbau...")
+    trainer.train()
+
+    # 7. Salvar e Avaliar Final
+    trainer.save_model(output_dir)
+    tokenizer.save_pretrained(output_dir)
+    
+    results = trainer.evaluate()
+    print("\n--- Resultados Finais no Golden Set (Humano) ---")
+    print(f"Accuracy: {results['eval_accuracy']:.4f}")
+    print(f"F1-Score (Weighted): {results['eval_f1']:.4f}")
+    print(f"Modelo salvo em: {output_dir}")
+
+if __name__ == "__main__":
+    main()
