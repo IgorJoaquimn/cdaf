@@ -1,0 +1,19 @@
+Escopo e Objetivo: Este TP serve como um ponto de checagem crucial para validar o progresso do projeto e receber feedback antes da entrega final. O relatório de 5 minutos deve ser conciso e focado, abordando:
+
+* Estratégia de Modelagem: Quais técnicas ou modelos estão sendo testados (ex: Regressão, Classificação, Clustering).
+- Classificação -> Primeiros geramos um pequeno golden set com exemplos gerados pelo grupo -> criamos um prompt que faca uma LLM performar proximo do humano -> usamos essa LLM para gerar um dataset maior de exemplos, dai treinamos um bertimbau nesse novo db.  [Adicionar prompt da LLM] 
+- Eda dos dados labeled por humanos
+
+* Insights Preliminares: O que foi aprendido a partir dos dados até o momento.
+Métricas Iniciais: Resultados preliminares, incluindo as métricas de avaliação escolhidas (e.g., Accuracy, F1-Score, RMSE, etc.) e a justificativa para a escolha dessas métricas.
+- Kohen Kappa de 0.47% 
+- [Adicionar graficos da LLM]
+- [Adicionar graficos do bertimbau]
+- [Adicionar tabelas de comparacao]
+
+* Próximos Passos: Um cronograma claro dos próximos passos de refinamento, incluindo novas iterações de modelagem, tuning de hiperparâmetros ou estratégias adicionais a serem exploradas.
+- To do 
+
+
+
+

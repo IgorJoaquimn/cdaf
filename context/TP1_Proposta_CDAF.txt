@@ -1,0 +1,442 @@
+UNIVERSIDADE FEDERAL DE MINAS GERAIS
+Instituto de Ciências Exatas
+Departamento de Ciência da Computação
+Curso de Graduação em Computação
+
+Álvaro Lima - 2021067062
+Daniele Diniz - 2020076874
+Igor Joaquim - 2021032218
+Ivan Assis - 2021421931
+Vitor Emanuel - 2021032072
+
+Antecipando o Apito: A Correlação entre o Sentimento em Tempo
+Real e Eventos de Campo em Transmissões Digitais
+
+Belo Horizonte
+2026
+
+Antecipando o Apito: A Correlação entre o Sentimento em Tempo
+Real e Eventos de Campo em Transmissões Digitais
+
+Trabalho apresentado à disciplina DCC071 e
+Ciência de Dados Aplicada ao Futebol, do
+Curso de graduação em Computação do
+Departamento de Ciência da Computação do
+Instituto de Ciências Exatas da UFMG, como
+requisito parcial à conclusão da disciplina.
+Professor (a): Adriano, Wagner e Ricardo
+
+Belo Horizonte
+2026
+
+Proposta
+1. Introdução e Contexto
+É comum observar, em transmissões esportivas e debates pós-jogo, a percepção de
+que a torcida reage de forma predominantemente emocional, sendo frequentemente
+caracterizada como “passional” ou pouco alinhada a análises táticas e estatísticas do futebol.
+Comentaristas, analistas e veículos de mídia frequentemente sugerem que o torcedor médio
+não capta nuances mais complexas do jogo, baseando suas opiniões em eventos pontuais ou
+impressões momentâneas.
+Entretanto, o consumo de futebol passou recentemente por uma transição de paradigma com
+o surgimento de transmissões via streaming interativo, como a CazéTV. Nessas plataformas,
+o chat em tempo real atua como uma verdadeira “arquibancada digital”, gerando um fluxo
+contínuo de dados não estruturados que capturam, em alta frequência, a reação imediata da
+torcida durante a partida.
+Esse novo contexto cria uma oportunidade inédita: ao invés de tratar a manifestação do
+torcedor apenas como ruído ou percepção subjetiva, torna-se possível analisá-la
+quantitativamente. Em particular, técnicas de processamento de linguagem natural permitem
+extrair sinais de sentimento coletivo a partir dessas interações, possibilitando sua
+representação como uma série temporal alinhada ao andamento do jogo.
+Dessa forma, este trabalho propõe utilizar a análise de sentimento do chat como um potencial
+“sensor coletivo” de desempenho, cruzando-o com métricas de processo do jogo para
+investigar a dinâmica entre a percepção do público e a realidade estatística em campo. Mais
+especificamente, busca-se analisar em que medida o comportamento emocional agregado da
+torcida reflete variações no desempenho das equipes e se apresenta padrões temporalmente
+correlacionados, ou potencialmente antecedentes, a eventos observados durante a partida.
+
+2. Exploração Inicial e Tomada de Decisão
+Durante a fase de planejamento e entendimento do negócio, realizamos uma busca por fontes
+de dados que permitissem a reprodutibilidade do estudo. Identificamos que o acesso a
+
+transmissões completas com chat preservado é restrito em muitos canais estrangeiros por
+questões de direitos autorais.
+Em contrapartida, identificamos na CazéTV uma playlist robusta de jogos da Bundesliga
+24/25 com transmissões brasileiras e chats arquivados. Essa descoberta foi fundamental para
+definirmos as seguintes decisões técnicas:
+●​ Volume de Dados: O chat da CazéTV apresenta uma densidade de comentários alta,
+o que reduz o ruído estatístico após o processo de janelamento.
+●​ Disponibilidade de Dados de súmula: A Bundesliga é um campeonato bastante
+estudado na literatura, logo é possível encontrar bases públicas com métricas de
+desempenho.
+●​ Língua e Modelo: Optamos pelo português brasileiro, utilizando o modelo
+XLM-roBERTa (um modelo BERT multilingue com versões focadas em redes
+sociais). Isso nos permite captar gírias, sarcasmo e nuances do torcedor local com
+maior precisão do que modelos genéricos.
+
+3. Perguntas de Pesquisa
+RQ1: Qual é a correlação temporal entre o sentimento coletivo agregado no chat de
+transmissões ao vivo e métricas de desempenho em campo, como xT e Momentum?
+RQ2: Existem padrões de variação de sentimento que precedem, de forma
+estatisticamente significativa, eventos discretos críticos da partida (gols, cartões) ?
+
+4. Metodologia
+O núcleo técnico deste trabalho consiste em alinhar três camadas distintas de informação: o
+texto do chat, os eventos discretos da partida e as métricas contínuas de desempenho ao longo
+de uma partida. Para garantir o rigor analítico e a testabilidade das hipóteses, a metodologia
+foi estruturada em quatro etapas fundamentais: a obtenção dos dados de campo, a adaptação
+do processamento de linguagem, a agregação temporal do sentimento e a análise estatística.
+
+Coleta do Chat do YouTube
+A captura da "arquibancada digital" requer a extração sistemática das interações síncronas
+durante a transmissão ao vivo. Para isso, utilizaremos bibliotecas especializadas em raspagem
+de dados de transmissões ou a própria API Data v3 do YouTube, garantindo a captura não
+apenas do conteúdo textual de cada mensagem, mas fundamentalmente do seu timestamp
+exato. Este metadado temporal é a espinha dorsal que viabiliza a sincronização posterior.
+Imediatamente após a coleta, o corpus bruto passará por uma rigorosa rotina de sanitização
+para mitigar ruídos. Esta etapa inclui a exclusão de bots moderadores, a remoção de
+mensagens automáticas de adesão de membros e a filtragem de spams mecânicos. Além
+disso, o conjunto de dados será anonimizado na origem. Identificadores pessoais (usernames
+e URLs de perfil) serão substituídos por hashes criptográficos irreversíveis, assegurando que
+o estudo análise exclusivamente a dinâmica das massas, sem margem para a re-identificação
+ou rastreamento individual dos torcedores.
+
+id_msg
+
+id_partida
+
+timestamp
+
+texto
+
+sentimento
+
+classificacao
+
+1
+
+GERxBAY
+
+00:15:30
+
+"Vamoos pra cima deles!"
+
+0.92
+
+Positivo
+
+2
+
+GERxBAY
+
+00:15:32
+
+"Esse juiz é muito caseiro,
+pqp"
+
+-0.85
+
+Negativo
+
+3
+
+GERxBAY
+
+00:15:35
+
+"Tira esse bagre do time
+logo"
+
+-0.78
+
+Negativo
+
+A fim de sincronizar o tempo dos comentários da live do YouTube com o tempo real de
+partida, precisamos saber em quanto tempo de transmissão a partida realmente aconteceu. Por
+exemplo, se o primeiro tempo de uma partida começa aos 34 minutos da transmissão, um
+comentário aos 36 minutos será, ao mesmo tempo, um comentário feito no minuto 2 da
+partida. Como estamos tratando de vídeos do YouTube, o placar da transmissão na maioria
+das vezes mostra o tempo de relógio corrido. Dessa forma, ao encontrar qual o tempo de
+relógio de um frame específico do vídeo, podemos identificar os timestamps de início de cada
+tempo.
+
+Figura. Frame do vídeo aos 39:52
+Note que o timer mostra 03:59 - logo a partida começou no minuto 35:53
+
+Figura. Placar usado para OCR
+
+Coleta dos Dados de Súmula e Desempenho
+Para correlacionar o sentimento da torcida com o que de fato ocorre no campo, utilizaremos
+dados de eventos provenientes de bases de dados estatísticos esportivos consolidadas. Essa
+etapa é crucial para a extração precisa dos timestamps de eventos discretos, como gols,
+
+cartões e substituições. A obtenção desses dados servirá como a nossa variável dependente de
+eventos, criando a base numérica que será cruzada com as reações do público. Por exemplo:
+●​ Gols marcados (e gols anulados).
+●​ Pênaltis assinalados.
+●​ Cartões vermelhos (expulsões diretas ou segundo amarelo).
+●​ Cartões amarelos por faltas duras ou reclamação.
+●​ Substituições de jogadores.
+Todos esses dados devem estar acompanhados do tempo de relógio que o evento ocorreu. A
+fim de criar uma série temporal
+
+Pensando em dados de Desempenho contínuos, duas métricas prevalecem como mais úteis, o
+xT (Expected Threat) e o Momentum.
+
+Processamento de Linguagem Natural e Adaptação de Domínio
+Para
+
+a
+
+análise
+
+de
+
+sentimento
+
+no
+
+chat
+
+do
+
+YouTube,
+
+usaremos
+
+o
+
+cardiffnlp/twitter-xlm-roberta-base-sentiment, escolhido por sua robustez e treinamento
+em tweets em português. O principal desafio é a semântica do jargão esportivo ("futebolês"),
+onde termos geralmente ofensivos podem indicar euforia. Para mitigar esse problema e
+validar o modelo em nosso corpus, desenvolveremos um Gold Standard. Este procedimento
+consistirá na anotação manual prévia da polaridade de uma amostra aleatória representativa
+de mensagens (aproximadamente 800 a 1000 interações). Isso nos permitirá calcular o
+F1-Score inicial do modelo e, caso o desempenho seja insatisfatório, realizar o fine-tuning da
+ferramenta ou acoplar um léxico específico de futebol antes da classificação em larga escala.
+Para otimizar a construção desse Gold Standard e potencializar o fine-tuning, adotaremos
+uma abordagem de Active Learning (Aprendizado Ativo) assistida pelo modelo de linguagem
+Qwen. Em vez de depender de uma amostra puramente aleatória, utilizaremos o modelo em
+um ciclo iterativo para identificar e filtrar as mensagens de maior complexidade e incerteza
+semântica (como sarcasmos profundos e inversões de polaridade). Atuando como um
+LLM-as-a-judge, o Qwen fornecerá rótulos preliminares e justificativas para os comentários
+mais desafiadores da transmissão. Posteriormente, essa amostra seletiva passará por validação
+
+humana. Essa estratégia reduz drasticamente o esforço braçal de anotação e garante que o
+modelo roBERTa seja treinado exatamente com as interações mais informativas, acelerando a
+convergência e a precisão do pipeline final.
+
+Agregação Temporal
+Uma vez resolvida a etapa semântica, lidaremos com a natureza inerentemente ruidosa do
+chat ao vivo (composto por spams, repetições mecânicas e excesso de emojis) abdicando da
+análise de comentários isolados em favor da técnica de Agregação por Janelas Temporais. A
+nossa estratégia consiste em agrupar as mensagens em janelas fixas, que variam
+empiricamente de 10 segundos a 2 minutos. Para cada janela T, calculamos um índice que
+transforma as linhas de texto em uma variável contínua, dada pela equação:
+
+𝑃𝑜𝑙𝑎𝑟𝑖𝑑𝑎𝑑𝑒(𝑇) =
+
+𝑃𝑜𝑠𝑖𝑡𝑖𝑣𝑎𝑠(𝑇) − 𝑁𝑒𝑔𝑎𝑡𝑖𝑣𝑎𝑠(𝑇)
+𝑇𝑜𝑡𝑎𝑙(𝑇) + ϵ
+
+onde ϵ previne divisão por zero em janelas vazias.
+
+​
+Para mitigar o viés de falsos positivos em janelas de baixa interatividade, esta pesquisa
+adotará uma abordagem bidimensional. Além da 𝑃𝑜𝑙𝑎𝑟𝑖𝑑𝑎𝑑𝑒(𝑇) extraída via roBERTa,
+incorporamos o volume de mensagens como proxy para o nível de excitação da audiência.
+Isso nos permitirá formular um índice garantindo que picos de positividade ou negatividade
+só tenham relevância estatística quando acompanhados por engajamento massivo da
+comunidade.
+●​ Alto Volume + Alta Polaridade: Euforia (Gol, drible plástico, defesa de pênalti).
+●​ Alto Volume + Baixa Polaridade: Estresse/Revolta (Erro de arbitragem, VAR, gol
+do adversário, chance clara perdida).
+●​ Baixo Volume + Polaridade Neutra/Positiva: Tédio/Expectativa (Toque de bola na
+zaga).
+●​ Baixo Volume + Baixa Polaridade: Tensão (Adversário dominando o jogo,
+"sufoco").
+É possível juntar ambas as métricas em uma só, chamada de “Engagement-Weighted
+Sentiment Index”
+𝑊𝑆𝐼(𝑇) = 𝑃𝑜𝑙𝑎𝑟𝑖𝑑𝑎𝑑𝑒(𝑇) * 𝑙𝑜𝑔[1 + 𝑉(𝑇)]
+
+Sincronização e Alinhamento
+A etapa final e mais crítica para validar a hipótese de "antecipação" é o alinhamento das
+variáveis. Como o tempo de vídeo no YouTube não corresponde ao relógio do provedor de
+dados estatísticos, e considerando a latência orgânica das transmissões via streaming
+
+(frequentemente entre 15 a 30 segundos de atraso em relação à vida real), realizaremos um
+emparelhamento matemático.
+Para transcender a mera observação de co-ocorrência e provar que o chat atua como um
+indicador antecedente, não usaremos correlações lineares simples. Em vez disso, aplicamos
+métodos avançados de séries temporais, estabelecendo, assim, se os padrões no índice de
+polaridade efetivamente precedem e preveem as flutuações de desempenho no gramado.
+
+5 . Delimitação do escopo do problema de pesquisa
+Dada a complexidade do problema e a diversidade de possíveis abordagens, este
+trabalho adota uma delimitação clara de escopo, priorizando a análise da relação entre o
+sentimento coletivo da torcida e o desempenho das equipes ao longo da partida.
+O foco principal consiste na investigação da correlação temporal entre o sentimento agregado
+do chat, obtido por meio de técnicas de análise de sentimento aplicadas a mensagens em
+tempo real, e métricas contínuas de desempenho em campo, em especial o Expected Threat
+(xT) e o Momentum. Essa abordagem busca compreender em que medida a variação do
+sentimento coletivo acompanha ou reflete mudanças na progressão ofensiva e no controle do
+jogo pelas equipes ao longo do tempo.
+Como objetivo complementar, o trabalho também analisa a relação entre variações
+significativas no sentimento e a ocorrência de eventos discretos da partida, como gols e
+cartões. Nesse contexto, busca-se identificar padrões temporais que indiquem se alterações no
+sentimento coletivo ocorrem antes, durante ou após tais eventos.
+Dessa forma, o estudo concentra-se prioritariamente na análise de correlação temporal com
+métricas contínuas, enquanto a investigação envolvendo eventos discretos é tratada como
+uma análise complementar, com o objetivo de enriquecer a compreensão da dinâmica entre
+percepção coletiva e acontecimentos em campo.
+
+6. Trabalhos relacionados
+A fundamentação teórica deste trabalho baseia-se na interseção entre a Computação Social e
+a Ciência de Dados Esportivos, áreas que têm utilizado as redes sociais como "sensores" para
+capturar a dinâmica emocional das massas em tempo real.
+
+Análise de Sentimento no Contexto do Futebol
+A análise de sentimento aplicada ao futebol tem sido explorada predominantemente a
+partir de dados do Twitter, visando compreender a reação dos torcedores e a sumarização de
+eventos. No que tange à identificação de momentos críticos, o trabalho de Andaloussi et al.
+(2015) propõe um framework para o resumo automático de partidas baseado em eventos de
+sentimento no Twitter, demonstrando que variações na polaridade das mensagens são proxies
+eficazes para gols e decisões arbitrais. De forma complementar, pesquisas como as de She et
+al. (2023) e Patel e Passi (2020) utilizaram modelos de Machine Learning e algoritmos como
+o VADER para mapear como o sentimento coletivo evolui antes e durante grandes
+competições como a Copa do Mundo, revelando padrões claros de reação a eventos de jogo.
+Para além da descrição, a literatura busca capacidades preditivas. O estudo de Miranda-Peña
+et al. (2021) explora o uso de sentimento agregado e teoria dos grafos para prever desfechos
+de partidas da Premier League, sugerindo que o comportamento coletivo contém sinais úteis
+para inferência sobre resultados finais. Na mesma linha, Almeida (2023) reforça a viabilidade
+de utilizar o conhecimento coletivo (wisdom of the crowd) extraído de redes sociais para
+antecipar eventos esportivos através de redes neurais.
+Entretanto, o domínio do futebol apresenta desafios semânticos únicos. Aloufi e El Saddik
+(2018) destacam que modelos genéricos frequentemente falham ao interpretar o "futebolês"
+(gírias e sarcasmo), evidenciando a necessidade de léxicos específicos para o domínio.
+Adicionalmente, Alhadlaq e Alnuaim (2023) analisaram diferenças culturais na expressão
+emocional entre torcedores árabes e hispânicos, mostrando que, embora existam variações
+linguísticas, a estrutura da evolução do sentimento coletivo mantém padrões identificáveis
+globalmente. Recentemente, pesquisadores como Mahmud et al. (2025) começaram a
+expandir essas análises para o YouTube, reconhecendo a riqueza das interações em chats de
+transmissões ao vivo.
+
+Análise de Sentimento em Outros Domínios
+A premissa de que dados textuais capturam dinâmicas subjacentes de sistemas
+complexos é validada em outros campos. No contexto científico, o estudo de Hassan et al.
+(2019) demonstra que o sentimento expresso em redes sociais sobre artigos acadêmicos pode
+atuar como um indicador precoce de seu impacto futuro e citações.
+De forma análoga, no setor financeiro, o trabalho de Guo e Xie (2024) investiga a correlação
+entre o sentimento no Twitter e as variações no mercado de ações através de Deep Learning.
+Os autores provam que o sentimento agregado não apenas reflete o estado atual do mercado,
+mas possui valor preditivo para movimentos de preço. Esses estudos reforçam a hipótese
+central deste trabalho: grandes volumes de dados gerados por usuários em tempo real
+capturam sinais emergentes que antecedem ou explicam flutuações em métricas tradicionais.
+
+7. Escopo e Seleção de Casos
+Em vez de analisar muitos jogos com poucos dados, selecionaremos 65 partidas de
+alto engajamento (com maior número de espectadores e curtidas) para que tenhamos uma
+amostra grande o suficiente de comentários para poder fazer nossa análise.
+
+8. Resultados Esperados
+Com a execução desta pesquisa, espera-se, primariamente, validar a hipótese de que o
+chat das transmissões ao vivo funciona como um sensor coletivo altamente responsivo, capaz
+de refletir a dinâmica de desempenho em campo com uma granularidade superior à das redes
+sociais assíncronas.
+No que tange à RQ1, antecipamos a identificação de uma correlação estatisticamente
+significativa entre o Índice de Polaridade agregado e as métricas contínuas de Expected
+Threat (xT) e Momentum. Espera-se que períodos de pressão ofensiva sustentada, mesmo
+sem a ocorrência imediata de gols, geram uma curva ascendente de sentimento positivo ou de
+alta excitação, demonstrando que a "arquibancada digital" percebe e reage a nuances táticas e
+de volume de jogo que não são capturadas por súmulas simplificadas.
+Quanto à RQ2, o resultado esperado mais ambicioso é a demonstração de que as flutuações
+de sentimento no chat possuem valor preditivo sobre eventos discretos e variações bruscas no
+
+desempenho. Acredita-se que o comportamento da massa digital apresenta padrões de
+"clímax" ou "tensão" que precedem estatisticamente momentos críticos, como gols e
+expulsões, validando o chat como um indicador antecedente. Este resultado consolida a ideia
+de que a percepção coletiva processa o contexto do jogo (como um contra-ataque promissor
+ou uma falha defensiva iminente) antes mesmo da conclusão do evento físico.
+No plano metodológico, espera-se que o trabalho entregue um framework validado de
+sincronização entre streaming e dados de campo, corrigindo distorções de tempo.
+Adicionalmente, espera-se comprovar que o uso do modelo roBERTa atinja uma acurácia
+superior na captura do "futebolês" e do sarcasmo, estabelecendo um novo padrão para o
+processamento de sentimentos em contextos esportivos brasileiros.
+Por fim, os resultados devem oferecer insights valiosos para a governança de plataformas e
+para o setor de transmissão (broadcasting), evidenciando como o engajamento em tempo real
+pode ser utilizado para prever picos de tráfego, moderar comportamentos tóxicos em
+momentos de alta tensão e enriquecer a experiência do espectador através de métricas de
+"termômetro de jogo" baseadas em evidências científicas.
+
+9. Referências
+●​ ALHADLAQ, A.; ALNUAIM, A. A. A Twitter-Based Comparative Analysis of
+Emotions and Sentiments of Arab and Hispanic Football Fans. Applied Sciences, v.
+13, n. 11, p. 6729, 2023. Disponível em: https://doi.org/10.3390/app13116729.
+●​ ALMEIDA, T. F. P. D. Predicting sports events using Twitter sentiment analysis and
+neural networks. 2023. 84 f. Dissertação (Mestrado em Engenharia Informática e de
+Computadores) – Instituto Superior Técnico, Universidade de Lisboa, Lisboa, 2023.
+●​ ALOUFI, S.; EL SADDIK, A. Sentiment Identification in Football-Specific Tweets.
+IEEE
+
+Access,
+
+v.
+
+6,
+
+p.
+
+78609-78621,
+
+2018.
+
+Disponível
+
+em:
+
+https://doi.org/10.1109/ACCESS.2018.2885117.
+●​ ANDALOUSSI, S. J. et al. Soccer Events Summarization by Using Sentiment
+Analysis. In: 2015 International Conference on Computational Science and
+Computational Intelligence (CSCI), Las Vegas, NV, USA, p. 59-64, 2015. Disponível
+em: https://doi.org/10.1109/CSCI.2015.59.
+
+●​ GUO, K.; XIE, H. Deep learning in finance assessing twitter sentiment impact and
+prediction on stocks. PeerJ Computer Science, v. 10, p. e1801, 2024. Disponível em:
+https://doi.org/10.7717/peerj-cs.1801.
+●​ MAHMUD, M. et al. Sport Sentiment Analysis of Twitter(X) Post's and YouTube
+Comments Using Machine Learning Algorithm. In: 2025 International Conference on
+Quantum Photonics, Artificial Intelligence, and Networking (QPAIN), 2025.
+Disponível em: https://doi.org/10.1109/QPAIN66474.2025.11171758.
+●​ MIRANDA-PEÑA, C. et al. Predicting Soccer Results Through Sentiment Analysis:
+A Graph Theory Approach. In: Lecture Notes in Computer Science (including
+subseries Lecture
+
+Notes
+
+Bioinformatics),
+
+v.
+
+in Artificial
+
+12747,
+
+p.
+
+Intelligence and Lecture Notes in
+336-347,
+
+2021.
+
+Disponível
+
+em:
+
+https://doi.org/10.1007/978-3-030-77980-1_32.
+●​ PATEL, R.; PASSI, K. Sentiment Analysis on Twitter Data of World Cup Soccer
+Tournament Using Machine Learning. IoT, v. 1, n. 2, p. 14, 2020. Disponível em:
+https://doi.org/10.3390/iot1020014.
+●​ SHE, J. et al. What Sentiment and Fun Facts We Learnt Before FIFA World Cup
+Qatar 2022 Using Twitter and AI. arXiv preprint arXiv:2306.16049, 2023. Disponível
+em: https://doi.org/10.48550/arXiv.2306.16049.
+
+

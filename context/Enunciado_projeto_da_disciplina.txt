@@ -1,0 +1,135 @@
+Projeto da Disciplina – Ciência de
+Dados Aplicada ao Futebol
+Este plano detalha os trabalhos práticos (TPs) a serem entregues, seus pesos na avaliação
+final, datas, e os requisitos específicos para cada etapa do projeto, garantindo uma
+progressão lógica desde a exploração inicial até o relatório científico final.
+
+TP1 - Proposta de Pesquisa (Peso: 10 Pontos)
+Peso: 10 Pontos
+Requisito de Entrega: Deverá ser entregue um pdf.
+Data de entrega: 28/04/2026
+O objetivo da proposta é ter uma estrutura inicial e um plano detalhado para um projeto de
+pesquisa completo que será desenvolvido e executado pelos alunos ao longo da disciplina.
+A proposta deve conter as seguintes seções, apresentadas de forma clara e estruturada:
+1.​ Introdução: A introdução deve fornecer uma breve visão geral do problema de
+pesquisa, a motivação para conduzir o estudo e contextualizar a área de aplicação
+no futebol e as questões ou hipóteses específicas de pesquisa que o projeto visa
+responder.
+2.​ Pergunta de Pesquisa: Esta seção deve apresentar a pergunta central que o
+projeto busca responder. É crucial que a pergunta foque no problema a ser resolvido
+ou no insight a ser gerado, contextualizando os dados a serem utilizados, e não nas
+tecnologias específicas da solução.
+3.​ Trabalhos Relacionados: Nesta seção, os alunos devem realizar uma busca e
+revisão bibliográfica por trabalhos relacionados ao tópico escolhido. A revisão deve
+mencionar como os trabalhos abordados se assemelham, diferem e/ou serão
+utilizados como base ou inspiração metodológica para o projeto proposto.
+4.​ Metodologia de Pesquisa: Esta seção deve esboçar o design da pesquisa,
+detalhando as fontes de dados (origem, tipo e volume), as etapas de
+pré-processamento e as técnicas de análise de dados (modelos de Machine
+Learning, análises estatísticas, etc.) que serão utilizadas no estudo. Os alunos
+também devem justificar suas escolhas e explicar por que esses métodos são
+apropriados para responder à pergunta de pesquisa.
+5.​ Resultados Esperados: Aqui, os alunos devem descrever os resultados esperados
+do estudo, incluindo quaisquer hipóteses que serão testadas, as métricas de
+avaliação e as possíveis implicações práticas dos resultados, no contexto de clubes
+de futebol e outros agentes da indústria (e.g., scouting, desempenho tático, análise
+de mercado).
+6.​ Conclusão: A conclusão deve resumir os principais pontos da proposta e fornecer
+uma justificativa clara e convincente para por que o projeto é importante, relevante
+para a Ciência de Dados e vale a pena ser desenvolvido no âmbito da disciplina.
+
+7.​ Referências: Finalmente, os alunos devem fornecer uma lista completa de
+referências citadas ao longo da proposta, utilizando um formato de citação
+consistente (e.g., ABNT, APA).​
+
+TP2 - Análise Exploratória dos Dados (AED)
+Peso: 10 Pontos
+Requisito de Entrega: Deverá ser entregue um notebook (Jupyter, Colab, etc.) e/ou
+código Python bem documentado.
+Data de entrega: 17/05/26
+Escopo e Objetivo: Esta etapa é fundamental para a imersão no conjunto de dados. O
+objetivo é familiarizar-se com as variáveis, identificar a qualidade dos dados e começar a
+formar hipóteses. O código entregue deve demonstrar:
+1.​ Carregamento e Limpeza Inicial de Dados: Tratamento de valores ausentes,
+outliers e inconsistências.
+2.​ Estatísticas Descritivas: Resumos numéricos e categóricos das principais
+variáveis.
+3.​ Visualização Exploratória: Gráficos e tabelas que ajudem a identificar padrões,
+anomalias e a distribuição das variáveis relevantes para a proposta do projeto.
+4.​ Contextualização: A exploração deve estar intrinsecamente ligada à Pergunta de
+Pesquisa ou ao problema de negócio definido no projeto.
+A entrega deve preparar o terreno de forma sólida para as etapas subsequentes de
+pré-processamento e modelagem.
+
+TP3 - Modelagem e Análise de Dados (Iteração
+Intermediária)
+Peso: 10 Pontos
+Requisito de Entrega: Deverá ser entregue um relatório em formato de Apresentação
+(slides ou material visual) com duração máxima de 5 minutos (apresentação oral, se
+houver).
+Data de entrega: 02/06/26
+Escopo e Objetivo: Este TP serve como um ponto de checagem crucial para validar o
+progresso do projeto e receber feedback antes da entrega final. O relatório de 5 minutos
+deve ser conciso e focado, abordando:
+1.​ Estratégia de Modelagem: Quais técnicas ou modelos estão sendo testados (ex:
+Regressão, Classificação, Clustering).
+2.​ Insights Preliminares: O que foi aprendido a partir dos dados até o momento.
+3.​ Métricas Iniciais: Resultados preliminares, incluindo as métricas de avaliação
+
+escolhidas (e.g., Accuracy, F1-Score, RMSE, etc.) e a justificativa para a escolha
+dessas métricas.
+4.​ Próximos Passos: Um cronograma claro dos próximos passos de refinamento,
+incluindo novas iterações de modelagem, tuning de hiperparâmetros ou estratégias
+adicionais a serem exploradas.
+O entregável principal é o material visual, que será avaliado pela clareza, objetividade e
+profundidade na comunicação do estado atual do projeto.
+
+TP4 - Apresentação Final e Slides (DemoDay)
+Peso: 15 Pontos
+Requisito de Entrega: Apresentação completa de 15 minutos. O entregável são os
+slides, mas a apresentação oral e a performance no DemoDay são componentes
+essenciais que entram na nota.
+Data de entrega: 18/06/26
+Escopo e Objetivo: O DemoDay é o momento de sintetizar e apresentar o trabalho
+completo para uma audiência técnica e/ou gerencial. A apresentação deve ser coesa,
+visualmente atraente e didática, cobrindo:
+1.​ Introdução e Contexto: O problema de pesquisa/negócio abordado e a motivação
+do projeto.
+2.​ Metodologia: Descrição das etapas de pré-processamento de dados e as técnicas
+de Modelagem de Dados utilizadas.
+3.​ Resultados Principais: Apresentação clara dos resultados obtidos, das métricas
+finais e da comparação com a baseline.
+4.​ Conclusões e Implicações Práticas: Discussão sobre o significado dos resultados
+e as implicações práticas (value proposition), ou seja, como o projeto resolve o
+problema inicial ou gera novo conhecimento.
+A avaliação considerará tanto a qualidade do material (slides) quanto a clareza, eloquência
+e domínio técnico demonstrado durante a apresentação oral.
+
+TP5 - Relatório Final (Modelo SBC - Artigo Científico)
+Peso: 15 Pontos (15% da nota final)
+Requisito de Entrega: Documento escrito no formato de artigo científico, seguindo o
+modelo de templates da SBC (Sociedade Brasileira de Computação), similar ao formato
+de submissão do FAME’26.
+Data de entrega: 25/06/26
+
+Escopo e Objetivo: Este é o entregável de formalização científica do projeto. O relatório
+deve ser um documento técnico robusto, completo e rigoroso, detalhando todo o processo e
+resultados. Deve conter obrigatoriamente as seguintes seções estruturadas:
+1.​ Introdução: Contextualização, definição do problema, pergunta de pesquisa e
+organização do artigo.
+2.​ Trabalhos Relacionados (Related Work): Revisão bibliográfica dos estudos e
+técnicas anteriores relevantes que fundamentam a metodologia.
+3.​ Metodologia: Descrição detalhada do conjunto de dados, pré-processamento,
+pipeline de experimentação e modelos utilizados.
+4.​ Resultados e Discussão: Apresentação rigorosa dos resultados quantitativos e
+qualitativos, acompanhada de sua interpretação e comparação com o estado da
+arte.
+5.​ Aplicações (Implicações Práticas): Discussão sobre como o modelo ou o insight
+pode ser aplicado no mundo real (ex: produção, tomada de decisão).
+6.​ Conclusão e Trabalhos Futuros: Resumo das principais descobertas,
+contribuições do trabalho e sugestões para continuidade da pesquisa.
+7.​ Referências Bibliográficas: Lista completa e formatada das fontes citadas.
+A avaliação focará na profundidade da análise, no rigor científico, na clareza da escrita e na
+aderência ao formato da SBC.
+
+
